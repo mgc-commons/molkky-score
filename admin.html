@@ -28,16 +28,15 @@ function renderResetButtons(){
   document.querySelectorAll('[data-reset]').forEach(b=>b.onclick=()=>resetLeague(b.dataset.reset));
 }
 async function resetLeague(league){
-  const entered=prompt(`${league}リーグの全試合記録を完全に削除します。\n他のリーグは変更されません。\n\n実行するには半角英字で「${league}」と入力してください。`);
-  if(entered!==league){if(entered!==null)msg('リーグ名が一致しないため、削除を中止しました');return}
-  if(!confirm(`最終確認：${league}リーグの得点・投球履歴・勝者・タイマーをすべて削除し、試合開始前に戻します。よろしいですか？`))return;
+  if(!confirm(`${league}リーグの記録を本当に削除しますか？\n第1試合から決定戦まで、確定した勝者・得点・履歴・タイマーをすべて削除します。\n他リーグやチーム構成は変更しません。`))return;
   const button=document.querySelector(`[data-reset="${league}"]`);
   if(button)button.disabled=true;
   try{
     const {data,error}=await supabase.rpc('molkky_admin_reset_league',{p_league:league,p_password:adminPassword});
     if(error)throw error;
+    if(!data?.verified_empty)throw new Error('削除後の確認に失敗しました');
     await refresh();
-    msg(`${league}リーグの記録を削除しました（${data?.deleted_matches??0}試合）。第1試合開始前の状態です。`);
+    msg(`${league}リーグの全記録を削除しました（${data.deleted_matches}試合）。確定済みの勝者も消去し、第1試合開始前に戻しました。`);
   }catch(e){msg('記録削除に失敗しました：'+e.message)}
   finally{if(button)button.disabled=false}
 }
