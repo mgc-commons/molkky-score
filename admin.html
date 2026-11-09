@@ -3,6 +3,7 @@
 </style></head><body><main class="shell"><header class="hero"><div class="eyebrow">MGC COMMONS · STAFF ONLY</div><h1>MÖLKKY 管理画面</h1><p>リーグの入力制限とチームの入れ替え</p></header>
 <section class="panel" id="loginPanel"><h2>運営ログイン</h2><p class="sub">共通パスワードのみでログインできます。パスワードはブラウザ内で一時保持し、再読み込み時に消去されます。</p><div class="box"><label>共通パスワード</label><input id="password" type="password" autocomplete="current-password"><p><button id="login">ログイン</button></p></div></section>
 <div id="adminPanel" class="hidden"><section class="panel"><div class="row"><div><h2>リーグ別の入力設定</h2><div class="sub">開始・終了日時は日本時間で入力。空欄なら日時制限なし。入力OFFなら即時ロックします。</div></div><div style="text-align:right"><button class="light" id="logout">ログアウト</button></div></div><div class="grid" id="leagues"></div></section>
+<section class="panel"><h2>リーグ別の記録を削除</h2><p class="sub">練習で作成した試合をリーグ単位で完全に削除し、「第1試合を開始する」前の状態に戻します。得点・投球履歴・勝者・タイマーを削除します。チーム構成や入力制限は変更しません。<strong>この操作は元に戻せません。</strong></p><div class="grid" id="resetLeagues"></div></section>
 <section class="panel"><h2>チームの入れ替え</h2><p class="sub">リーグ間で1チームずつ交換します。交換先・交換元の両リーグで試合が開始されている場合は変更できません。人数はA～Gが4チーム、Hが3チームのまま維持されます。</p><div class="grid"><div><label>交換元リーグ</label><select id="fromLeague"></select><label>交換するチーム</label><select id="fromTeam"></select></div><div><label>交換先リーグ</label><select id="toLeague"></select><label>交換するチーム</label><select id="toTeam"></select></div></div><p><button id="swap">2チームを交換する</button></p></section></div><section class="panel"><p id="message" role="status">接続準備中…</p><a href="./index.html">得点登録ページに戻る</a></section></main>
 <script type="module">
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2';
@@ -17,11 +18,29 @@ async function check(){
   if(logged)await refresh();else msg('共通パスワードを入力してください');
 }
 async function refresh(){const {data,error}=await supabase.from('molkky_leagues').select('*').order('league');if(error){msg(error.message);return}leagues=data||[];render();msg('設定を読み込みました')}
-function render(){const oldFrom=$('fromLeague').value,oldTo=$('toLeague').value;$('leagues').innerHTML=leagues.map(l=>`<div class="league"><div class="row"><h3>LEAGUE ${l.league}</h3><span class="tag">${l.teams.length} TEAMS</span></div><div class="teams">${l.teams.map(esc).join(' ／ ')}</div><label class="switch"><input type="checkbox" id="on${l.league}" ${l.enabled?'checked':''}>入力を許可する</label><label>入力開始（日本時間）</label><input type="datetime-local" id="start${l.league}" value="${dt(l.open_at)}"><label>入力終了（日本時間）</label><input type="datetime-local" id="end${l.league}" value="${dt(l.close_at)}"><p><button class="light" data-save="${l.league}">このリーグの設定を保存</button></p></div>`).join('');document.querySelectorAll('[data-save]').forEach(b=>b.onclick=()=>save(b.dataset.save));for(const id of ['fromLeague','toLeague'])$(id).innerHTML=leagues.map(l=>`<option value="${l.league}">${l.league}リーグ</option>`).join('');$('fromLeague').value=oldFrom||'D';$('toLeague').value=oldTo||'E';renderTeams()}
+function render(){const oldFrom=$('fromLeague').value,oldTo=$('toLeague').value;$('leagues').innerHTML=leagues.map(l=>`<div class="league"><div class="row"><h3>LEAGUE ${l.league}</h3><span class="tag">${l.teams.length} TEAMS</span></div><div class="teams">${l.teams.map(esc).join(' ／ ')}</div><label class="switch"><input type="checkbox" id="on${l.league}" ${l.enabled?'checked':''}>入力を許可する</label><label>入力開始（日本時間）</label><input type="datetime-local" id="start${l.league}" value="${dt(l.open_at)}"><label>入力終了（日本時間）</label><input type="datetime-local" id="end${l.league}" value="${dt(l.close_at)}"><p><button class="light" data-save="${l.league}">このリーグの設定を保存</button></p></div>`).join('');document.querySelectorAll('[data-save]').forEach(b=>b.onclick=()=>save(b.dataset.save));for(const id of ['fromLeague','toLeague'])$(id).innerHTML=leagues.map(l=>`<option value="${l.league}">${l.league}リーグ</option>`).join('');$('fromLeague').value=oldFrom||'D';$('toLeague').value=oldTo||'E';renderTeams();renderResetButtons()}
 function renderTeams(){for(const [leagueId,teamId] of [['fromLeague','fromTeam'],['toLeague','toTeam']]){const l=leagues.find(x=>x.league===$(leagueId).value);$(teamId).innerHTML=(l?.teams||[]).map((t,i)=>`<option value="${i}">${esc(t)}</option>`).join('')}}
 $('fromLeague').onchange=renderTeams;$('toLeague').onchange=renderTeams;
 async function save(l){const enabled=$('on'+l).checked,open_at=utc($('start'+l).value),close_at=utc($('end'+l).value);if(open_at&&close_at&&open_at>close_at){msg('終了日時は開始日時より後にしてください');return}if(!confirm(l+'リーグの入力設定を変更しますか？'))return;const {error}=await supabase.rpc('molkky_admin_set_league',{p_league:l,p_enabled:enabled,p_open_at:open_at,p_close_at:close_at,p_password:adminPassword});if(error){msg('保存失敗：'+error.message);return}await refresh();msg(l+'リーグの設定を保存しました')}
 $('swap').onclick=async()=>{const a=$('fromLeague').value,b=$('toLeague').value,ai=+$('fromTeam').value,bi=+$('toTeam').value;if(a===b){msg('異なるリーグを選択してください');return}if(!confirm(`${a}リーグと${b}リーグの選択したチームを交換しますか？`))return;const {error}=await supabase.rpc('molkky_admin_swap_teams',{p_league_a:a,p_index_a:ai,p_league_b:b,p_index_b:bi,p_password:adminPassword});if(error){msg('交換失敗：'+error.message);return}await refresh();msg('チームを交換しました')};
+function renderResetButtons(){
+  $('resetLeagues').innerHTML=leagues.map(l=>`<div class="league"><div class="row"><strong>LEAGUE ${l.league}</strong><button type="button" class="rose" data-reset="${l.league}">記録を削除</button></div><div class="sub">${l.teams.length}チーム｜このリーグの全試合を未開始に戻す</div></div>`).join('');
+  document.querySelectorAll('[data-reset]').forEach(b=>b.onclick=()=>resetLeague(b.dataset.reset));
+}
+async function resetLeague(league){
+  const entered=prompt(`${league}リーグの全試合記録を完全に削除します。\n他のリーグは変更されません。\n\n実行するには半角英字で「${league}」と入力してください。`);
+  if(entered!==league){if(entered!==null)msg('リーグ名が一致しないため、削除を中止しました');return}
+  if(!confirm(`最終確認：${league}リーグの得点・投球履歴・勝者・タイマーをすべて削除し、試合開始前に戻します。よろしいですか？`))return;
+  const button=document.querySelector(`[data-reset="${league}"]`);
+  if(button)button.disabled=true;
+  try{
+    const {data,error}=await supabase.rpc('molkky_admin_reset_league',{p_league:league,p_password:adminPassword});
+    if(error)throw error;
+    await refresh();
+    msg(`${league}リーグの記録を削除しました（${data?.deleted_matches??0}試合）。第1試合開始前の状態です。`);
+  }catch(e){msg('記録削除に失敗しました：'+e.message)}
+  finally{if(button)button.disabled=false}
+}
 $('login').onclick=async()=>{
   const pw=$('password').value;
   const {data,error}=await supabase.rpc('molkky_check_admin_password',{p_password:pw});
