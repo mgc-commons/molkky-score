@@ -5,3 +5,4 @@
 [hidden]{display:none!important}
 
 .bracket{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.bracketmatch{border:1px solid #bfd6c8;border-radius:8px;padding:8px;margin:10px 0;background:#f4f8f5}.bracketmatch div{padding:8px;overflow-wrap:anywhere}.bracketmatch .won{background:#c7e5d4;font-weight:bold}@media(max-width:700px){.bracket{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.reset-button{background:#fff5ef;color:#854b37;border:1px solid #d9b5a5;font-size:.85rem;min-height:42px}.bracketmatch .reset-button{width:100%;margin:6px 0 0}.timer-controls{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
