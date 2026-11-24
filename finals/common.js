@@ -5,7 +5,7 @@ export const db={rpc:(name,args)=>request('/rpc/'+name,args),from:()=>({select:(
 export const $=id=>document.getElementById(id), esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export let event;export async function load(){const {data,error}=await db.from('final_event').select('*').eq('id',1).single();if(error)throw error;event=data;return data}
 const pw=()=>sessionStorage.getItem('final-admin-password')||'';
-export async function readVotes(){const {data,error}=await db.rpc('final_admin_read_votes',{p_password:pw()});if(error)throw error;return data}
+export async function readVotes(){const {data,error}=await db.rpc('final_v3_read',{p_password:pw()});if(error)throw error;return data}
 export async function save(p,version=event.version){const {data,error}=await db.rpc('final_admin_save',{p_password:pw(),p_version:version,p_patch:p});if(error)throw error;if(!data)throw Error('他の端末で更新されました。再読込してやり直してください');await load()}
 export function watch(fn){let busy=false;const run=async()=>{if(busy)return;busy=true;try{await load();fn(event);$('status').textContent='接続中・自動更新'}catch(e){$('status').textContent='接続エラー：'+e.message}finally{busy=false}};setInterval(run,5000);run()}
 export function options(teams){return '<option value="">選択してください</option>'+teams.map(t=>`<option>${esc(t)}</option>`).join('')}
