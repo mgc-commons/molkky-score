@@ -3,3 +3,5 @@
 .prediction header{border-bottom:3px double #78988b;padding-bottom:12px}.prediction .rank{display:flex;align-items:center;gap:10px;border:0;padding:0}.rank-number{display:inline-grid;place-items:center;width:38px;height:38px;background:#397c63;color:white;border-radius:5px;font-size:23px;font-weight:900}.prediction #message{background:#e2eee6;padding:16px;border:1px solid #a5c5b1;border-radius:8px;font-weight:800;text-align:center}.prediction #submit{width:100%;margin-top:20px}.prediction section{border-radius:12px}.prediction select{min-height:52px}
 
 [hidden]{display:none!important}
+
+.bracket{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.bracketmatch{border:1px solid #bfd6c8;border-radius:8px;padding:8px;margin:10px 0;background:#f4f8f5}.bracketmatch div{padding:8px;overflow-wrap:anywhere}.bracketmatch .won{background:#c7e5d4;font-weight:bold}@media(max-width:700px){.bracket{grid-template-columns:repeat(2,minmax(0,1fr))}}
